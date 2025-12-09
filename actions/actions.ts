@@ -1,0 +1,32 @@
+'use server'
+
+import { adminDb } from "@/firebase-admin"
+import { auth } from "@clerk/nextjs/server"
+
+export const createNewDocument = async () => {
+   const { userId, sessionClaims } = await auth()
+
+  if (!userId) {
+    return {success: false, error: "unauthorized"}
+  }
+
+  const docCollectionRef = adminDb.collection("documents");
+  const docRef = await docCollectionRef.add({
+    title: "New Doc"
+  })
+
+  await adminDb.collection('users').doc(sessionClaims.email!).collection('rooms').doc(docRef.id).set({
+    userId: sessionClaims.email!,
+    role: 'owner',
+    createdAt: new Date(),
+    roomId: docRef.id
+  });
+
+  
+
+
+  return {
+    success: true,
+    docId: docRef.id
+  };
+}
